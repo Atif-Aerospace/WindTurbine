@@ -1,7 +1,7 @@
 import os, subprocess
 
 def AddNumbers(x1, x2):
-	return (x1 + x2)
+    return (x1 + x2)
 
 def MultiplyNumbers(x1, x2):
 	return (x1 * x2)
@@ -11,7 +11,10 @@ def TwoOutputsModel(x1, x2):
 	y2 = x1 * x2
 	return (y1, y2)
 
-
+def ArrayModel(array, scalar):
+    array[0] = scalar
+    y = array
+    return (y)
 
 def FlopsModel(x1, x2):
     os.chdir(os.path.dirname(__file__))
