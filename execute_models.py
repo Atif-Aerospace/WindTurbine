@@ -17,16 +17,11 @@ def ExecuteModels():
 		args = ()
 		for input in req_json["inputs"]:
 			#print(str(input["name"]) + " = " + str(input["value"]))
+			dataName = input["name"]
+			dataType = input["type"]
 			dataValue_string = input["value"]
-			if ";" in dataValue_string:
-				dataValue_object = GetDataObject("DoubleMatrix", dataValue_string)
-				args += (dataValue_object,)
-			elif "," in dataValue_string:
-				dataValue_object = GetDataObject("DoubleVector", dataValue_string)
-				args += (dataValue_object,)
-			else:
-				dataValue_object = GetDataObject("Double", dataValue_string)
-				args += (dataValue_object,)
+			dataValue_object = GetDataObject(dataType, dataValue_string)
+			args += (dataValue_object,)
 		print("Model Inputs: ")
 		print(args)
 		
@@ -51,7 +46,10 @@ def ExecuteModels():
 		for input in req_json["inputs"]:
 			response_body["inputs"].append({"name": input["name"], "value": input["value"]})
 		for output in req_json["outputs"]:
-			response_body["outputs"].append({"name": output["name"], "value": y1})
+			dataValue_string = Object2String(output["type"], y1)
+			print("^^^^^^^^^^^^^^^^^^^^^^^")
+			print(y1)
+			response_body["outputs"].append({"name": output["name"], "value": dataValue_string})
 
 		res = make_response(jsonify(response_body), 200)
 		return res
@@ -60,7 +58,7 @@ def ExecuteModels():
 		return make_response(jsonify({"message": "Request body must be JSON"}), 400)
 
 
-
+# Convert data_string to data_object
 def GetDataObject(dataType, dataValue_string):
 	if dataType == "Double":
 		double = float(dataValue_string)
@@ -79,14 +77,17 @@ def GetDataObject(dataType, dataValue_string):
 		return doubleMatrix
 
 
-
-# def Object2String(dataType, dataValue_object):
-# 	if dataType == "Double":
-
-# 	elif dataType == "Integer":
-
-# 	elif dataType == "DoubleVector":
-
-# 	elif dataType == "DoubleMatrix":
-# 	list1 = [1, 2, 3]
-# 	str1 = ''.join(str(e) for e in list1)
+# Convert data_object to data_string
+def Object2String(dataType, dataValue_object):
+	if dataType == "Double" or dataType == "Integer":
+		return str(dataValue_object)
+	elif dataType == "DoubleVector":
+		dataValue_string = ','.join(str(e) for e in dataValue_object)
+		return dataValue_string
+	elif dataType == "DoubleMatrix":
+		dataValue_string = ""
+		for list in dataValue_object:
+			str1 = ','.join(str(e) for e in list)
+			dataValue_string = dataValue_string + str1 + ";"
+		dataValue_string = dataValue_string[:-1]
+		return dataValue_string

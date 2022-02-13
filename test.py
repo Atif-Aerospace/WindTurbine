@@ -1,5 +1,25 @@
 import models
 
+# Convert data_object to data_string
+def Object2String(dataType, dataValue_object):
+	if dataType == "Double" or dataType == "Integer":
+		return str(dataValue_object)
+	elif dataType == "DoubleVector":
+		dataValue_string = ','.join(str(e) for e in dataValue_object)
+		return dataValue_string
+	elif dataType == "DoubleMatrix":
+		dataValue_string = ""
+		for list in dataValue_object:
+			str1 = ','.join(str(e) for e in list)
+			dataValue_string = dataValue_string + str1 + ";"
+		dataValue_string = dataValue_string[:-1]
+		return dataValue_string
+
+list1 = [[1, 2, 3], [4, 5, 6]]
+str1 = ','.join(str(e) for e in list1)
+
+dataValue_string = Object2String("DoubleMatrix", list1)
+
 def GetDataObject(dataType, dataValue_string):
 	if dataType == "Double":
 		scalar_double = float(dataValue_string)

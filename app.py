@@ -4,13 +4,17 @@ from flask_cors import CORS
 
 from datetime import datetime
 
+import models
+
 from execute_models import execute_models_api
 
 app = Flask(__name__)
+CORS(app)
+
 app.register_blueprint(execute_models_api)
 
 
-CORS(app)
+
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///project_database.db'
 db = SQLAlchemy(app)
@@ -135,6 +139,20 @@ def create_data():
         
         # create data for the given json
         _create_data(req_json)
+
+        response_body = {"Result": "Data Created"}
+        res = make_response(jsonify(response_body), 200)
+        return res
+    else:
+        return make_response(jsonify({"message": "Request body must be JSON"}), 400)
+@app.route('/create-dataObjects', methods=["POST"])
+def create_dataObjects():
+    if request.is_json:
+        req_json = request.get_json()
+        
+        for dataJson in req_json:
+            # create data for the given json
+            _create_data(dataJson)
 
         response_body = {"Result": "Data Created"}
         res = make_response(jsonify(response_body), 200)
@@ -279,6 +297,24 @@ def create_workflow():
         return res
     else:
         return make_response(jsonify({"error": "Request body must be JSON"}), 400)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

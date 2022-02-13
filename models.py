@@ -11,9 +11,14 @@ def TwoOutputsModel(x1, x2):
 	y2 = x1 * x2
 	return (y1, y2)
 
-def ArrayModel(array, scalar):
+def VectorModel(array, scalar):
     array[0] = scalar
     y = array
+    return (y)
+
+def MatrixModel(matrix, scalar):
+    matrix[0][0] = scalar
+    y = matrix
     return (y)
 
 def FlopsModel(x1, x2):
