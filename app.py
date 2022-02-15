@@ -124,6 +124,79 @@ def get_project():
     project["models"] = modelsList
 
     # workflows
+    workflowsList = []
+    workflows = ComputationalWorkflow.query.all()
+    for computationalWorkflow in workflows:
+        workflow = {}
+        workflow["name"] = computationalWorkflow.name
+        workflow["category"] = computationalWorkflow.category
+        workflow["description"] = computationalWorkflow.description
+
+        # data objects
+        dataObjects = []
+        for input in computationalWorkflow.inputs:
+            for data in dataList:
+                if data["name"] == input.name:
+                    dataObjects.append(data)
+                    break
+        for output in computationalWorkflow.outputs:
+            for data in dataList:
+                if data["name"] == output.name:
+                    dataObjects.append(data)
+                    break
+        workflow["data"] = dataObjects
+
+        # inputs
+        modelInputs = []
+        for input in computationalWorkflow.inputs:
+            modelInputs.append({"name": input.name})
+        workflow["inputs"] = modelInputs
+
+        # outputs
+        modelOutputs = []
+        for output in computationalWorkflow.outputs:
+            modelOutputs.append({"name": output.name})
+        workflow["outputs"] = modelOutputs
+
+        
+
+        executableComponents = []
+        for executableComponent in computationalWorkflow.executable_components:
+            model = {}
+            model["name"] = executableComponent.name
+            model["category"] = executableComponent.category
+            model["description"] = executableComponent.description
+            model["endPoint"] = executableComponent.endPoint
+            modelInputs = []
+            for input in executableComponent.inputs:
+                modelInputs.append({"name": input.name})
+            model["inputs"] = modelInputs
+            modelOutputs = []
+            for output in executableComponent.outputs:
+                modelOutputs.append({"name": output.name})
+            model["outputs"] = modelOutputs
+            executableComponents.append(model)
+        workflow["executableComponents"] = executableComponents
+
+        scheduledComponents = []
+        for scheduledComponent in computationalWorkflow.scheduled_components:
+            model = {}
+            model["name"] = scheduledComponent.name
+            model["category"] = scheduledComponent.category
+            model["description"] = scheduledComponent.description
+            model["endPoint"] = scheduledComponent.endPoint
+            modelInputs = []
+            for input in scheduledComponent.inputs:
+                modelInputs.append({"name": input.name})
+            model["inputs"] = modelInputs
+            modelOutputs = []
+            for output in scheduledComponent.outputs:
+                modelOutputs.append({"name": output.name})
+            model["outputs"] = modelOutputs
+            scheduledComponents.append(model)
+        workflow["scheduledComponents"] = scheduledComponents
+        workflowsList.append(workflow)
+    project["workflows"] = workflowsList
 
     # studies
     
@@ -249,45 +322,25 @@ def create_workflow():
         scheduled_components = req_json["scheduledComponents"]
         print('Atif')
         # create database entry for "computational workflow"
-        
-        print('workflow_inputs: ' + str(len(inputs)))
 
-        workflow_inputs = ""
+        workflow = ComputationalWorkflow(name=name, category=category, description=description)
+        
         for i in range(0, len(inputs)):
             dataVariable = DataVariable.query.filter_by(name = inputs[i]["name"]).first()
             if dataVariable is None:
-                new_data_json = next((d for d in workflow_data_json if d["name"] == inputs[i]["name"]), None)
-                _create_data(new_data_json)
-                dataVariable = DataVariable.query.filter_by(name = inputs[i]["name"]).first()
-            if dataVariable is None:
                 return make_response(jsonify({"error": "Data variable '" + inputs[i]["name"] + "' not Present"}), 400)
-            workflow_inputs = workflow_inputs + dataVariable.name + ","
-        print('workflow_inputs: ' + workflow_inputs)
-        workflow_outputs = ""
+            workflow.inputs.append(dataVariable)
         for i in range(0, len(outputs)):
             dataVariable = DataVariable.query.filter_by(name = outputs[i]["name"]).first()
             if dataVariable is None:
-                new_data_json = next((d for d in workflow_data_json if d["name"] == outputs[i]["name"]), None)
-                _create_data(new_data_json)
-                dataVariable = DataVariable.query.filter_by(name = outputs[i]["name"]).first()
-            if dataVariable is None:
                 return make_response(jsonify({"error": "Data variable '" + outputs[i]["name"] + "' not Present"}), 400)
-            workflow_outputs = workflow_outputs + dataVariable.name + ","
-        print('workflow_outputs: ' + workflow_outputs)
-        workflow_executable_components = ""
+            workflow.outputs.append(dataVariable)
         for i in range(0, len(executable_components)):
             computationalModel = ComputationalModel.query.filter_by(name = executable_components[i]["name"]).first()
             if computationalModel is None:
-                new_model_json = next((m for m in executable_components if m["name"] == executable_components[i]["name"]), None)
-                _create_model(new_model_json)
-                computationalModel = ComputationalModel.query.filter_by(name = executable_components[i]["name"]).first()
-            if computationalModel is None:
-                return make_response(jsonify({"error": "Executable component '" + executable_components[i]["name"] + "' not Present"}), 400)
-            workflow_executable_components = workflow_executable_components + computationalModel.name + ","
-        print('workflow_executable_components: ' + workflow_executable_components)
+                return make_response(jsonify({"error": "Computational Model '" + executable_components[i]["name"] + "' not Present"}), 400)
+            workflow.executable_components.append(computationalModel)
 
-        workflow = ComputationalWorkflow(name=name, category=category, description=description, inputs=workflow_inputs, outputs=workflow_outputs, executable_components=workflow_executable_components, scheduled_components=workflow_executable_components)
-        
         db.session.add(workflow)
         print(workflow)
         db.session.commit()
@@ -390,18 +443,54 @@ class ModelOutput(db.Model):
 
 
 class ComputationalWorkflow(db.Model):
-    __tablename__ = 'ComputationalWorkflow'
+    __tablename__ = 'ComputationalWorkflows'
     id = db.Column(db.Integer, primary_key = True)
     name = db.Column(db.String(50))
     category = db.Column(db.String(50))
     description = db.Column(db.String(500))
     #location = db.Column(db.String(50))
     #date_created = db.Column(db.DateTime, dafault = datetime.now)
-    #inputs = db.relationship('Data', backref='owner')
-    inputs = db.Column(db.String(5000))
-    outputs = db.Column(db.String(5000))
-    executable_components = db.Column(db.String(5000))
-    scheduled_components = db.Column(db.String(5000))
+    # inputs = db.Column(db.String(5000))
+    # outputs = db.Column(db.String(5000))
+    inputs = db.relationship("DataVariable", secondary="WorkflowInputs")
+    outputs = db.relationship("DataVariable", secondary="WorkflowOutputs")
+    executable_components = db.relationship("ComputationalModel", secondary="WorkflowExecutableComponents")
+    scheduled_components = db.relationship("ComputationalModel", secondary="WorkflowScheduledComponents")
+
+
+class WorkflowInput(db.Model):
+    __tablename__ = 'WorkflowInputs'
+    id = db.Column(db.Integer, primary_key=True)
+    workflow_id = db.Column(db.Integer, db.ForeignKey('ComputationalWorkflows.id'))
+    data_id = db.Column(db.Integer, db.ForeignKey('DataVariables.id'))
+    workflow = db.relationship(ComputationalWorkflow, backref=db.backref("WorkflowInputs", cascade="all, delete-orphan"))
+    data = db.relationship(DataVariable, backref=db.backref("WorkflowInputs", cascade="all, delete-orphan"))
+
+
+class WorkflowOutput(db.Model):
+    __tablename__ = 'WorkflowOutputs'
+    id = db.Column(db.Integer, primary_key=True)
+    workflow_id = db.Column(db.Integer, db.ForeignKey('ComputationalWorkflows.id'))
+    data_id = db.Column(db.Integer, db.ForeignKey('DataVariables.id'))
+    workflow = db.relationship(ComputationalWorkflow, backref=db.backref("WorkflowOutputs", cascade="all, delete-orphan"))
+    data = db.relationship(DataVariable, backref=db.backref("WorkflowOutputs", cascade="all, delete-orphan"))
+
+
+class WorkflowExecutableComponent(db.Model):
+    __tablename__ = 'WorkflowExecutableComponents'
+    id = db.Column(db.Integer, primary_key=True)
+    workflow_id = db.Column(db.Integer, db.ForeignKey('ComputationalWorkflows.id'))
+    model_id = db.Column(db.Integer, db.ForeignKey('ComputationalModels.id'))
+    workflow = db.relationship(ComputationalWorkflow, backref=db.backref("WorkflowExecutableComponents", cascade="all, delete-orphan"))
+    model = db.relationship(ComputationalModel, backref=db.backref("WorkflowExecutableComponents", cascade="all, delete-orphan"))
+
+class WorkflowScheduledComponent(db.Model):
+    __tablename__ = 'WorkflowScheduledComponents'
+    id = db.Column(db.Integer, primary_key=True)
+    workflow_id = db.Column(db.Integer, db.ForeignKey('ComputationalWorkflows.id'))
+    model_id = db.Column(db.Integer, db.ForeignKey('ComputationalModels.id'))
+    workflow = db.relationship(ComputationalWorkflow, backref=db.backref("WorkflowScheduledComponents", cascade="all, delete-orphan"))
+    model = db.relationship(ComputationalModel, backref=db.backref("WorkflowScheduledComponents", cascade="all, delete-orphan"))
 
 if __name__ == '__main__':
     app.run(debug=True, port=3002)

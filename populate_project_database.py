@@ -27,7 +27,13 @@ db.session.add(m1)
 
 
 # workflows
-wf1 = ComputationalWorkflow(name='WF1', category='system.test', description='First Workflow', inputs='x1,x2', outputs='x1,x2', executable_components='x1,x2', scheduled_components='x1,x2')
+wf1 = ComputationalWorkflow(name='WF1', category='system.test', description='First Workflow')
+wf1.inputs.append(x1)
+wf1.inputs.append(x2)
+wf1.outputs.append(y1)
+wf1.executable_components.append(m1)
+wf1.scheduled_components.append(m1)
+
 db.session.add(wf1)
 
 db.session.commit()
